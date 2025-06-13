@@ -9,16 +9,16 @@ interface Message {
 }
 
 const initialGreetings = [
-  "Hey {girlName}, I’m {yourName}. You’ve got such a beautiful smile. 😊",
-  "Hi {girlName}, it’s {yourName} here. You’re looking absolutely stunning today. 😍",
-  "Hey {girlName}, mind if I steal a moment of your time? I’m {yourName}. 😊",
-  "Hello gorgeous {girlName}, I’m {yourName}. How’s your day going? 🌟",
-  "Hey {girlName}, I’m {yourName}. Thought I’d brighten your day with a little hello. 😊",
-  "Hi {girlName}, {yourName} here. You’ve been on my mind since I saw your picture. 😍",
-  "Hey {girlName}, I’m {yourName}. Honestly, you’re even more beautiful than words can say. 🌹",
-  "Hi {girlName}, I’m {yourName}. You’ve got a charm that’s impossible to ignore. 😊",
-  "Hey {girlName}, I’m {yourName}. Your presence lights up the whole room. 💫",
-  "Hi {girlName}, can I introduce myself properly? I’m {yourName}, and I’d really love to know you. 😊"
+  "Hey {girlName}, I'm {yourName}. You've got such a beautiful smile. 😊",
+  "Hi {girlName}, it's {yourName} here. You're looking absolutely stunning today. 😍",
+  "Hey {girlName}, mind if I steal a moment of your time? I'm {yourName}. 😊",
+  "Hello gorgeous {girlName}, I'm {yourName}. How's your day going? 🌟",
+  "Hey {girlName}, I'm {yourName}. Thought I'd brighten your day with a little hello. 😊",
+  "Hi {girlName}, {yourName} here. You've been on my mind since I saw your picture. 😍",
+  "Hey {girlName}, I'm {yourName}. Honestly, you're even more beautiful than words can say. 🌹",
+  "Hi {girlName}, I'm {yourName}. You've got a charm that's impossible to ignore. 😊",
+  "Hey {girlName}, I'm {yourName}. Your presence lights up the whole room. 💫",
+  "Hi {girlName}, can I introduce myself properly? I'm {yourName}, and I'd really love to know you. 😊"
 ];
 
 
@@ -64,7 +64,7 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
   }, [messages]);
 
   const cleanResponse = (text: string) => {
-    if (!text) return "Sorry, I no fit respond now. Try again later.";
+    if (!text) return "I'm having trouble responding right now. Could we try again?";
     
     return text
       // Remove any conversation history or message formatting
@@ -102,7 +102,7 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
           'HTTP-Referer': window.location.origin,
           'X-Title': 'Love Emoji Chat',
           'Content-Type': 'application/json'
@@ -112,18 +112,28 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
           messages: [
             {
               role: 'system',
-              content: `You are ${names.yourName}, a charming, confident young Nigerian man chatting with a girl named ${names.girlName}. 
-              - Speak in smooth, fluent, and romantic English.
-              - Your goal is to make her smile, feel special, and gently convince her to share her phone number.
-              - Be confident, polite, respectful, and naturally flirty.
-              - Keep responses short (max 2 sentences) and engaging.
-              - NEVER repeat previous messages.
-              - NEVER mention or include past conversation history.
-              - DO NOT use special formatting, symbols, LaTeX, or code-like expressions.
-              - Use occasional light emojis (😊😉❤️) to make the conversation warm.
-              - Avoid slang or Pidgin; speak clearly, like a gentleman.
-              - Be natural, fun, and make her feel valued and safe.
-              - ALWAYS keep the conversation moving toward getting her number in a respectful way.`
+              content: `You are ${names.yourName}, a charming and romantic Nigerian gentleman chatting with a beautiful girl named ${names.girlName}. 
+              - Speak in elegant, romantic English with a Nigerian touch.
+              - Your goal is to make her feel special and eventually get her phone number.
+              - Be confident, respectful, and naturally romantic.
+              - Keep responses short (2-3 sentences) and engaging.
+              - Use romantic compliments and sweet talk naturally.
+              - NEVER use Pidgin English or slang.
+              - Use occasional romantic emojis (❤️🌹✨) to make the conversation warm.
+              - Be a gentleman who knows how to woo a lady.
+              - Make her feel valued and special.
+              - Gradually and respectfully work towards getting her phone number.
+              - Use romantic Nigerian expressions like "my queen", "my angel", "my beautiful one" occasionally.
+              - Keep the conversation light, fun, and romantic.
+              - Show genuine interest in getting to know her better.
+              - ALWAYS respond to the user's message, even if it's short.
+              - If the user mentions money or financial help, respond with: "I understand you might be looking for support, but I'm here to get to know you better. Would you like to share more about yourself?"
+              - If the user says "no thing" or similar, ask about their interests or day.
+              - If the user says "thank you" or similar, respond with a romantic compliment or question.
+              - Never repeat the same response twice.
+              - Keep the conversation flowing naturally.
+              - Always acknowledge the user's message before responding.
+              - Be more engaging and ask specific questions.`
             },
             ...recentMessages,
             {
@@ -139,7 +149,14 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
 
       if (!data.choices || !data.choices[0] || !data.choices[0].message) {
         console.error('Invalid response format:', data);
-        return "Sorry, I no fit respond now. Try again later.";
+        // Generate a more dynamic fallback response
+        const fallbackResponses = [
+          `Your smile brightens my day, ${names.girlName}. Would you like to tell me more about yourself?`,
+          `I'm really enjoying our chat, ${names.girlName}. What interests you the most?`,
+          `You seem like an interesting person, ${names.girlName}. What do you enjoy doing in your free time?`,
+          `I'd love to know more about you, ${names.girlName}. What's your favorite way to spend the day?`
+        ];
+        return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
       }
 
       const responseText = data.choices[0].message.content;
@@ -147,13 +164,27 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
 
       if (!cleanedResponse) {
         console.error('Empty response after cleaning');
-        return "Abeg, make we yarn again? I no hear you well.";
+        // Generate a more dynamic fallback response
+        const fallbackResponses = [
+          `You're absolutely captivating, ${names.girlName}. What's your favorite thing to do?`,
+          `I'm curious about you, ${names.girlName}. What makes you smile?`,
+          `You seem special, ${names.girlName}. What's your dream in life?`,
+          `I'd love to know more about you, ${names.girlName}. What's your passion?`
+        ];
+        return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
       }
 
       return cleanedResponse;
     } catch (error) {
       console.error('Error generating response:', error);
-      return "Sorry, I no fit respond now. Try again later.";
+      // Generate a more dynamic fallback response
+      const fallbackResponses = [
+        `Your presence makes my heart skip a beat, ${names.girlName}. Shall we continue our lovely conversation?`,
+        `I'm really enjoying getting to know you, ${names.girlName}. What's your favorite way to spend the day?`,
+        `You're such an interesting person, ${names.girlName}. What brings joy to your life?`,
+        `I'd love to know more about you, ${names.girlName}. What's your biggest dream?`
+      ];
+      return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
     }
   };
 
@@ -171,11 +202,25 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
       if (aiResponse) {
         setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
       } else {
-        setMessages(prev => [...prev, { role: 'assistant', content: "Abeg, make we yarn again? I no hear you well." }]);
+        // Generate a more dynamic fallback response
+        const fallbackResponses = [
+          `Your beauty leaves me speechless, ${names.girlName}. Would you like to share more about yourself?`,
+          `I'm really curious about you, ${names.girlName}. What's your favorite thing to do?`,
+          `You seem like an amazing person, ${names.girlName}. What's your passion in life?`,
+          `I'd love to know more about you, ${names.girlName}. What makes you happy?`
+        ];
+        setMessages(prev => [...prev, { role: 'assistant', content: fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)] }]);
       }
     } catch (error) {
       console.error('Error in handleSubmit:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I no fit respond now. Try again later." }]);
+      // Generate a more dynamic fallback response
+      const fallbackResponses = [
+        `Every moment with you is precious, ${names.girlName}. Shall we continue our lovely chat?`,
+        `I'm really enjoying our conversation, ${names.girlName}. What's your favorite way to spend the day?`,
+        `You're such an interesting person, ${names.girlName}. What brings joy to your life?`,
+        `I'd love to know more about you, ${names.girlName}. What's your biggest dream?`
+      ];
+      setMessages(prev => [...prev, { role: 'assistant', content: fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)] }]);
     } finally {
       setIsLoading(false);
     }
