@@ -2,7 +2,8 @@ import type React from "react";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
-import BottonNav from "@/components/bottonNav";
+import ConditionalNav from "@/components/ConditionalNav";
+
 // Load Montserrat font
 const montserrat = Montserrat({
   subsets: ["latin"],
@@ -25,7 +26,7 @@ export default function RootLayout({
     <html lang="en" className={montserrat.variable}>
       <body suppressHydrationWarning>
         {children}
-        <BottonNav/>
+        <ConditionalNav />
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Menu, X, MessageCircle, Settings, User, Heart, Phone } from 'lucide-react';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -39,6 +39,7 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
   const [conversationComplete, setConversationComplete] = useState(false);
   const [lastResponseType, setLastResponseType] = useState('');
   const [usedResponses, setUsedResponses] = useState<Set<string>>(new Set());
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const getRandomGreeting = (girlName: string, yourName: string) => {
     const randomIndex = Math.floor(Math.random() * initialGreetings.length);
@@ -224,18 +225,16 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
   const generateAIResponse = async (userMessage: string) => {
     try {
       const sentiment = analyzeUserResponse(userMessage);
-      
-      // Check if user gave a phone number
+  
       if (sentiment === 'gave_number') {
         setHasNumber(true);
         setConversationComplete(true);
       }
-      
-      // Use our dynamic response system
+  
       const dynamicResponse = generateDynamicResponse(userMessage, sentiment);
-      
-      // For complex conversations, try API but with Nigerian context
-      if (conversationStage > 3 && sentiment === 'neutral' && userMessage.length > 10) {
+  
+      // 🔁 Trigger AI more broadly
+      if ((sentiment === 'positive' || sentiment === 'neutral') && userMessage.length > 8) {
         try {
           const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
@@ -250,69 +249,48 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
               messages: [
                 {
                   role: 'system',
-                  content: `You are ${names.yourName}, a smooth Nigerian guy trying to toast ${names.girlName} to get her number. 
-
-PERSONALITY: Confident, charming, respectful but persistent Nigerian guy
-GOAL: Get her number and build connection
-LANGUAGE: Mix of English and Nigerian Pidgin (70% English, 30% Pidgin)
-STAGE: ${conversationStage}/10 (0=just met, 10=asking for number)
-ALREADY HAVE NUMBER: ${hasNumber}
-
-RULES:
-- Never repeat previous responses
-- Keep responses under 20 words
-- Use Nigerian slang naturally (o, na, dey, abeg, omo, etc.)
-- Be flirty but respectful
-- Show interest in her specifically
-- Don't ask for number until stage 8+
-- If you have her number, don't ask again
-
-Recent chat context:
-${messages.slice(-2).map(m => `${m.role}: ${m.content}`).join('\n')}
-
-Her message: "${userMessage}"
-Respond as ${names.yourName}:`
+                  content: `You are ${names.yourName}, a smooth Nigerian guy toasting ${names.girlName}. 
+  
+  - PERSONALITY: Charming, confident, sweet-talker from Nigeria.
+  - GOAL: Get her number & flirt respectfully.
+  - LANGUAGE: Speak 60% Pidgin, 40% English.
+  - STAGE: ${conversationStage}/10
+  - NEVER repeat previous replies.
+  - Avoid similar phrasing to older messages.
+  - Use Nigerian slang (omo, shey, e choke, etc).
+  - Use emojis naturally. Vary tone.
+  - Prior replies:
+  ${messages.filter(m => m.role === 'assistant').slice(-5).map(m => `• ${m.content}`).join('\n')}`
                 },
-                {
-                  role: 'user',
-                  content: userMessage
-                }
+                { role: 'user', content: `${userMessage} (Stage: ${conversationStage})` }
               ],
               temperature: 0.9,
-              max_tokens: 50
+              max_tokens: 60
             })
           });
-
+  
           const data = await response.json();
-          
-          if (data.choices && data.choices[0] && data.choices[0].message) {
-            let aiResponse = data.choices[0].message.content.trim();
-            
-            // Clean up the response
-            aiResponse = aiResponse
+          if (data.choices?.[0]?.message?.content) {
+            let aiReply = data.choices[0].message.content
               .replace(/^\w+:\s*/, '')
               .replace(/["']/g, '')
               .replace(/\n+/g, ' ')
               .replace(/\s+/g, ' ')
               .trim();
-            
-            // Avoid repetition and inappropriate responses
-            if (aiResponse.length > 10 && 
-                !usedResponses.has(aiResponse) && 
-                !aiResponse.toLowerCase().includes('number') || conversationStage >= 8) {
-              setUsedResponses(prev => new Set(prev).add(aiResponse));
-              return aiResponse;
+  
+            if (aiReply.length > 8 && !usedResponses.has(aiReply)) {
+              setUsedResponses(prev => new Set(prev).add(aiReply));
+              return aiReply;
             }
           }
-        } catch (error) {
-          console.error('API Error:', error);
+        } catch (err) {
+          console.error('AI API error:', err);
         }
       }
-      
+  
       return dynamicResponse;
-      
-    } catch (error) {
-      console.error('Error generating response:', error);
+    } catch (err) {
+      console.error('generateAIResponse failed:', err);
       return generateDynamicResponse(userMessage, 'neutral');
     }
   };
@@ -373,65 +351,211 @@ Respond as ${names.yourName}:`
   }
 
   return (
-    <div className="h-screen bg-gradient-to-b from-pink-50 to-rose-50">
-      <div className="h-full flex flex-col">
-        <div className="p-4 border-b bg-white shadow-sm">
-          <h1 className="text-xl font-bold text-pink-600">Chat with {names.girlName}</h1>
-          <p className="text-sm text-gray-500">{names.yourName} is chatting with you</p>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-2xl p-3 ${
-                  message.role === 'user'
-                    ? 'bg-pink-500 text-white'
-                    : 'bg-white shadow-sm text-gray-800'
-                }`}
-              >
-                {message.content}
-              </div>
-            </div>
-          ))}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-white rounded-2xl p-3 text-gray-800 shadow-sm">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+    <div className="h-screen bg-gradient-to-b from-pink-50 to-rose-50 flex">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:relative lg:translate-x-0 lg:shadow-none`}>
+        <div className="h-full flex flex-col">
+          {/* Sidebar Header */}
+          <div className="p-6 border-b bg-gradient-to-r from-pink-500 to-rose-500 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <Heart className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg">Love Chat</h2>
+                  <p className="text-pink-100 text-sm">Sweet conversations</p>
                 </div>
               </div>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden p-2 hover:bg-white/20 rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-          )}
-          <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Info */}
+          <div className="p-6 border-b">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">{names.girlName.charAt(0)}</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">{names.girlName}</h3>
+                  <p className="text-sm text-gray-500">Chatting with {names.yourName}</p>
+                </div>
+              </div>
+              
+              {/* Status Indicators */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">Conversation Stage</span>
+                  <span className="text-sm font-medium text-pink-600">{conversationStage}/10</span>
+                </div>
+                {hasNumber && (
+                  <div className="flex items-center gap-2 bg-green-50 p-3 rounded-lg">
+                    <Phone className="h-4 w-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-800">Got her number! 🎉</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="p-6 space-y-3">
+            <h4 className="font-medium text-gray-900 mb-3">Quick Actions</h4>
+            <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
+              <MessageCircle className="h-5 w-5 text-pink-500" />
+              <span className="text-sm text-gray-700">New Chat</span>
+            </button>
+            <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
+              <Settings className="h-5 w-5 text-gray-500" />
+              <span className="text-sm text-gray-700">Settings</span>
+            </button>
+            <button className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors">
+              <User className="h-5 w-5 text-gray-500" />
+              <span className="text-sm text-gray-700">Profile</span>
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="mt-auto p-6 border-t">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Messages</span>
+                <span className="font-medium">{messages.length}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Response Time</span>
+                <span className="font-medium">~2s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col lg:ml-0">
+        {/* Mobile Header */}
+        <div className="lg:hidden p-4 border-b bg-white shadow-sm">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-sm">{names.girlName.charAt(0)}</span>
+              </div>
+              <div>
+                <h1 className="font-semibold text-gray-900">{names.girlName}</h1>
+                <p className="text-xs text-gray-500">Stage {conversationStage}/10</p>
+              </div>
+            </div>
+            <div className="w-8"></div>
+          </div>
         </div>
 
-        <div className="p-4 border-t bg-white">
-          <form onSubmit={handleSubmit} className="max-w-4xl mx-auto">
-            <div className="flex gap-2">
+        {/* Desktop Header */}
+        <div className="hidden lg:block p-6 border-b bg-white shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">{names.girlName.charAt(0)}</span>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Chat with {names.girlName}</h1>
+                <p className="text-sm text-gray-500">{names.yourName} is chatting with you</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {hasNumber && (
+                <div className="flex items-center gap-2 bg-green-100 px-3 py-2 rounded-full">
+                  <Phone className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-800">Got Number!</span>
+                </div>
+              )}
+              <div className="bg-gray-100 px-3 py-2 rounded-full">
+                <span className="text-sm font-medium text-gray-700">Stage {conversationStage}/10</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+          <div className="max-w-full mx-auto space-y-4">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${
+                    message.role === 'user'
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white'
+                      : 'bg-white text-gray-800 border border-gray-100'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                    <span className="text-sm text-gray-500 ml-2">Typing...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        {/* Input */}
+        <div className="p-4 lg:p-6 border-t bg-white">
+          <div className="max-w-4xl mx-auto">
+            <form onSubmit={handleSubmit} className="flex gap-3">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-full text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-full text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                disabled={isLoading}
               />
               <button
                 type="submit"
-                disabled={isLoading}
-                className="bg-gradient-to-r from-pink-500 to-rose-500 text-white p-3 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50"
+                disabled={isLoading || !input.trim()}
+                className="bg-gradient-to-r from-pink-500 to-rose-500 text-white p-3 rounded-full hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send size={20} />
               </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
     </div>
   );
 };
