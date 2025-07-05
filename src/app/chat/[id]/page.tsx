@@ -239,7 +239,7 @@ const ChatPage = ({ params }: { params: Promise<{ id: string }> }) => {
           const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': 'Bearer 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',
+              'Authorization': 'Bearer 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',
               'HTTP-Referer': window.location.origin,
               'X-Title': 'Nigerian Chat Bot',
               'Content-Type': 'application/json'
